@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universo de Tania - Gracias por Existir</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap"
+        rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+    <style>
+        :root {
+            --primary: #ffaa00;
+            --accent: #00f2ff;
+            --bg: #000000;
+            --gold: #d4af37;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: var(--bg);
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+        }
+
+        /* ========== PANTALLA DE INTRODUCCIÓN ========== */
+        #intro-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 1;
+            transition: opacity 1.5s ease-out;
+        }
+
+        #intro-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .intro-content {
+            text-align: center;
+            max-width: 800px;
+            padding: 40px;
+            animation: fadeInUp 1.5s ease-out;
+        }
+
+        .intro-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 4rem;
+            font-weight: 300;
+            color: var(--gold);
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        .intro-subtitle {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 300;
+            font-style: italic;
+            color: #ffffff;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .intro-message {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: #cccccc;
+            margin-bottom: 50px;
+            line-height: 1.8;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .start-button {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            padding: 18px 60px;
+            background: transparent;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: var(--gold);
+            transition: width 0.6s, height 0.6s, top 0.6s, left 0.6s;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+        }
+
+        .start-button:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+
+        .start-button:hover {
+            color: #000;
+            box-shadow: 0 0 40px var(--gold);
+            transform: scale(1.05);
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                text-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+            }
+
+            50% {
+                text-shadow: 0 0 60px rgba(212, 175, 55, 0.8), 0 0 90px rgba(212, 175, 55, 0.6);
+            }
+        }
+
+        @keyframes twinkle {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* ========== EXPERIENCIA PRINCIPAL ========== */
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+        }
+
+        #video-input {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 120px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 170, 0, 0.3);
+            transform: scaleX(-1);
+            z-index: 5;
+            opacity: 0.3;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            width: 280px;
+            z-index: 20;
+            border: 1px solid rgba(255, 170, 0, 0.2);
+        }
+
+        .bottom-nav {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 30;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .nav-btn {
+            padding: 10px 16px;
+            border-radius: 25px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .nav-btn.active {
+            background: var(--primary);
+            color: black;
+            font-weight: bold;
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            flex-direction: column;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .intro-title {
+                font-size: 2.5rem;
+            }
+
+            .intro-subtitle {
+                font-size: 1.3rem;
+            }
+
+            .intro-message {
+                font-size: 1rem;
+                padding: 0 20px;
+            }
+
+            .start-button {
+                font-size: 1.2rem;
+                padding: 15px 40px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- PANTALLA DE INTRODUCCIÓN -->
+    <div id="intro-screen">
+        <div class="stars" id="stars-container"></div>
+        <div class="intro-content">
+            <h1 class="intro-title">Universo de Tania</h1>
+            <p class="intro-subtitle">Un regalo especial por tu cumpleaños</p>
+            <p class="intro-message">
+                En la inmensidad del universo, entre millones de estrellas y galaxias infinitas,
+                existe un brillo único e irrepetible: tú. Este es un pequeño regalo, algo nerd de mi parte, y espero que
+                te guste.
+            </p>
+            <p class="intro-message">
+                Psdt: Es mejor si lo abres desde una laptop, pero en celular sirve también.
+            </p>
+            <button class="start-button" onclick="startJourney()">Iniciar el Viaje 🪐</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE CARGA -->
+    <div id="loading-screen" style="display: none;">
+        <h1 style="color: var(--primary); letter-spacing: 5px;">INICIANDO SINGULARIDAD</h1>
+        <p style="color: #666;">Preparando el universo de Tania...</p>
+    </div>
+
+    <!-- EXPERIENCIA PRINCIPAL -->
+    <div id="canvas-container"></div>
+    <video id="video-input" autoplay playsinline></video>
+
+    <div class="ui-overlay">
+        <h3 style="margin:0; color: var(--primary);">Universo de Tania</h3>
+
+        <p style="font-size: 0.65rem; color: #888; margin-top: 15px; line-height: 1.4;">
+            ✌️ <b>Paz:</b> Sorpresa 1 (🎂)<br>
+            ✊ <b>Puño:</b> Sorpresa 2 (📸)<br>
+            ✊✊ <b>2 Puños:</b> Sorpresa 3 (🕳️)<br>
+            <br>
+        </p>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="setMode('free', this)">🌌</button>
+        <button class="nav-btn" onclick="setMode('text', this)">🎂</button>
+        <button class="nav-btn" onclick="setMode('image', this)">📸</button>
+        <button class="nav-btn" onclick="setMode('blackhole', this)">🕳️</button>
+    </div>
+
+    <audio id="bg-music" loop></audio>
+
+    <script>
+        // ============================================
+        // CONFIGURACIÓN: COLOCA AQUÍ TUS ARCHIVOS
+        // ============================================
+
+        const PHOTO_PATHS = [
+            'assets/Foto.jpg',
+            'assets/Foto2.jpg',
+            'assets/Foto3.jpg',
+        ];
+
+        const MUSIC_PATH = 'assets/SOFS.mp3';
+
+        // ============================================
+        // PANTALLA DE INTRODUCCIÓN
+        // ============================================
+
+        // Crear estrellas de fondo
+        function createStars() {
+            const container = document.getElementById('stars-container');
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                container.appendChild(star);
+            }
+        }
+
+        createStars();
+
+        let journeyStarted = false;
+
+        function startJourney() {
+            if (journeyStarted) return;
+            journeyStarted = true;
+
+            // Fade out intro
+            const intro = document.getElementById('intro-screen');
+            intro.classList.add('fade-out');
+
+            // Mostrar loading
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'flex';
+                intro.style.display = 'none';
+
+                // Iniciar experiencia
+                initThree();
+                initAI();
+            }, 1500);
+        }
+
+        // ============================================
+        // EXPERIENCIA PRINCIPAL
+        // ============================================
+
+        let scene, camera, renderer, particleSystem, thankYouMesh;
+        let videoElement, handsDetector;
+        let particles = [];
+        let particleCount = 60000;
+        let currentMode = 'free';
+        let isManualMode = false;
+
+        let textPoints = [], thankYouPoints = [], allImagePoints = [], bhPoints = [], ambientPoints = [];
+        let currentImageIndex = 0;
+        let handPos = new THREE.Vector3(0, 0, 0);
+        let fireworks = [];
+
+        function initThree() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 20;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            generateTextPoints();
+            generateThankYouPoints();
+            generateBlackHolePoints();
+            generateAmbientPoints();
+            createParticles();
+
+            loadPhotosAndMusic();
+            animate();
+
+            setInterval(() => {
+                if (currentMode === 'image' && allImagePoints.length > 1) {
+                    currentImageIndex = (currentImageIndex + 1) % allImagePoints.length;
+                }
+            }, 7000);
+        }
+
+        async function loadPhotosAndMusic() {
+            const audio = document.getElementById('bg-music');
+            audio.src = MUSIC_PATH;
+            audio.play().catch(e => console.log('Audio requiere interacción del usuario'));
+
+            allImagePoints = [];
+            for (let i = 0; i < PHOTO_PATHS.length; i++) {
+                try {
+                    const points = await loadImageFromPath(PHOTO_PATHS[i]);
+                    allImagePoints.push(points);
+                } catch (error) {
+                    console.log(`No se pudo cargar: ${PHOTO_PATHS[i]}`);
+                }
+            }
+        }
+
+        function loadImageFromPath(path) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const size = 250;
+                    canvas.width = size;
+                    canvas.height = size;
+                    ctx.drawImage(img, 0, 0, size, size);
+                    const data = ctx.getImageData(0, 0, size, size).data;
+                    const temp = [];
+                    for (let y = 0; y < size; y++) {
+                        for (let x = 0; x < size; x++) {
+                            if ((data[(y * size + x) * 4 + 3]) > 128 &&
+                                (data[(y * size + x) * 4] + data[(y * size + x) * 4 + 1] + data[(y * size + x) * 4 + 2]) / 3 > 50) {
+                                temp.push(new THREE.Vector3((x - size / 2) * 0.06, (size / 2 - y) * 0.06, 0));
+                            }
+                        }
+                    }
+                    const final = [];
+                    for (let i = 0; i < particleCount; i++) {
+                        final.push(temp[i % temp.length] || new THREE.Vector3(0, 0, 0));
+                    }
+                    resolve(final);
+                };
+                img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+                img.src = path;
+            });
+        }
+
+        function generateThankYouPoints() {
+            thankYouPoints = [];
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1200;
+            canvas.height = 500;
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 100px Arial';
+            ctx.fillText("Otra Vuelta al Sol 💗", 600, 180);
+            ctx.fillText("Disfruta cada Momento", 600, 280);
+            ctx.fillText("TQM ;)", 600, 380);
+
+            const data = ctx.getImageData(0, 0, 1200, 500).data;
+            const valid = [];
+            for (let y = 0; y < 500; y += 2) {
+                for (let x = 0; x < 1200; x += 2) {
+                    if (data[(y * 1200 + x) * 4 + 3] > 128) {
+                        valid.push(new THREE.Vector3((x - 600) * 0.03, (150 - y) * 0.03, 0));
+                    }
+                }
+            }
+            for (let i = 0; i < particleCount; i++) {
+                thankYouPoints.push(valid[i % valid.length]);
+            }
+        }
+
+        function generateBlackHolePoints() {
+            bhPoints = [];
+
+            const coreCount = Math.floor(particleCount * 0.12);
+            for (let i = 0; i < coreCount; i++) {
+                const phi = Math.random() * Math.PI * 2;
+                const costheta = Math.random() * 2 - 1;
+                const u = Math.random();
+                const theta = Math.acos(costheta);
+                const r = 0.5 * Math.cbrt(u);
+                bhPoints.push(new THREE.Vector3(
+                    r * Math.sin(theta) * Math.cos(phi),
+                    r * Math.sin(theta) * Math.sin(phi),
+                    r * Math.cos(theta)
+                ));
+            }
+
+            const innerDiscCount = Math.floor(particleCount * 0.38);
+            for (let i = 0; i < innerDiscCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = 1.8 + Math.random() * 2.8;
+                const thickness = (Math.random() - 0.5) * 0.4;
+
+                const x = Math.cos(angle) * r;
+                const z = Math.sin(angle) * r;
+                const y = thickness * Math.exp(-Math.abs(r - 3) / 2);
+
+                bhPoints.push(new THREE.Vector3(x, y, z));
+            }
+
+            const midDiscCount = Math.floor(particleCount * 0.25);
+            for (let i = 0; i < midDiscCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = 4.5 + Math.random() * 2.8;
+                const thickness = (Math.random() - 0.5) * 0.7;
+
+                const x = Math.cos(angle) * r;
+                const z = Math.sin(angle) * r;
+                const y = thickness * Math.exp(-Math.abs(r - 5.5) / 2.5);
+
+                bhPoints.push(new THREE.Vector3(x, y, z));
+            }
+
+            const outerDiscCount = Math.floor(particleCount * 0.15);
+            for (let i = 0; i < outerDiscCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = 7.5 + Math.random() * 3.5;
+                const thickness = (Math.random() - 0.5) * 1.2;
+
+                const x = Math.cos(angle) * r;
+                const z = Math.sin(angle) * r;
+                const y = thickness * Math.exp(-Math.abs(r - 9) / 3);
+
+                bhPoints.push(new THREE.Vector3(x, y, z));
+            }
+
+            const lensingCount = particleCount - bhPoints.length;
+            for (let i = 0; i < lensingCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = 2.5 + Math.random() * 8;
+
+                const curveIntensity = Math.sin(angle * 3 + Math.random() * Math.PI);
+                const curveHeight = curveIntensity * r * 0.4;
+                const randomVariation = (Math.random() - 0.5) * 2;
+
+                const x = Math.cos(angle) * r;
+                const z = Math.sin(angle) * r;
+                const y = curveHeight + randomVariation;
+
+                bhPoints.push(new THREE.Vector3(x, y, z));
+            }
+        }
+
+        function generateTextPoints() {
+            textPoints = [];
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1000;
+            canvas.height = 500;
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 90px Arial';
+            ctx.fillText("¡Feliz Cumpleaños", 500, 180);
+            ctx.fillText("Tania!", 500, 280);
+            ctx.fillText("🎂", 500, 380);
+            const data = ctx.getImageData(0, 0, 1000, 500).data;
+            const valid = [];
+            for (let y = 0; y < 500; y += 2) {
+                for (let x = 0; x < 1000; x += 2) {
+                    if (data[(y * 1000 + x) * 4 + 3] > 128) {
+                        valid.push(new THREE.Vector3((x - 500) * 0.035, (250 - y) * 0.035, 0));
+                    }
+                }
+            }
+            for (let i = 0; i < particleCount; i++) textPoints.push(valid[i % valid.length]);
+        }
+
+        function generateAmbientPoints() {
+            ambientPoints = [];
+            for (let i = 0; i < particleCount; i++) {
+                ambientPoints.push(new THREE.Vector3(
+                    (Math.random() - 0.5) * 60,
+                    (Math.random() - 0.5) * 40,
+                    (Math.random() - 0.5) * 30
+                ));
+            }
+        }
+
+        function createParticles() {
+            const geo = new THREE.BufferGeometry();
+            const pos = new Float32Array(particleCount * 3);
+            const col = new Float32Array(particleCount * 3);
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                const p = {
+                    curr: ambientPoints[i].clone(),
+                    isDecorator: Math.random() < 0.08,
+                    color: new THREE.Color()
+                };
+                p.color.setHSL(0.1, 0.8, 0.5);
+                pos[i * 3] = p.curr.x;
+                pos[i * 3 + 1] = p.curr.y;
+                pos[i * 3 + 2] = p.curr.z;
+                col[i * 3] = p.color.r;
+                col[i * 3 + 1] = p.color.g;
+                col[i * 3 + 2] = p.color.b;
+                particles.push(p);
+            }
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+            particleSystem = new THREE.Points(geo, new THREE.PointsMaterial({
+                size: 0.05,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.95
+            }));
+            scene.add(particleSystem);
+        }
+
+        function setMode(mode, btn) {
+            currentMode = mode;
+            isManualMode = true;
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            clearTimeout(window.mTO);
+            window.mTO = setTimeout(() => isManualMode = false, 15000);
+        }
+
+        function onHandResults(results) {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length >= 1) {
+                const lm = results.multiHandLandmarks[0];
+                handPos.x = (0.5 - lm[9].x) * 30;
+                handPos.y = (0.5 - lm[9].y) * 20;
+
+                if (!isManualMode) {
+                    let fists = 0;
+                    results.multiHandLandmarks.forEach(h => {
+                        if (h[8].y > h[6].y && h[12].y > h[10].y) fists++;
+                    });
+
+                    let target = 'free';
+                    if (fists === 2) target = 'blackhole';
+                    else if (fists === 1) target = 'image';
+                    else if (lm[8].y < lm[6].y && lm[12].y < lm[10].y) target = 'text';
+
+                    if (target !== currentMode) {
+                        const btns = document.querySelectorAll('.nav-btn');
+                        const map = { free: 0, text: 1, image: 2, blackhole: 3 };
+                        setMode(target, btns[map[target]]);
+                        isManualMode = false;
+                    }
+                }
+            } else if (!isManualMode) {
+                currentMode = 'free';
+            }
+        }
+
+        function launchFirework() {
+            if (currentMode !== 'text') return;
+            const origin = handPos.clone().add(new THREE.Vector3(
+                (Math.random() - 0.5) * 10,
+                (Math.random() - 0.5) * 10,
+                0
+            ));
+            const color = new THREE.Color().setHSL(Math.random(), 1, 0.6);
+            for (let i = 0; i < 60; i++) {
+                fireworks.push({
+                    pos: origin.clone(),
+                    vel: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.8,
+                        (Math.random() - 0.5) * 0.8,
+                        (Math.random() - 0.5) * 0.8
+                    ),
+                    life: 1.0,
+                    color: color
+                });
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const posAttr = particleSystem.geometry.attributes.position.array;
+            const colAttr = particleSystem.geometry.attributes.color.array;
+            const time = Date.now() * 0.002;
+
+            if (currentMode === 'text' && Math.random() < 0.15) launchFirework();
+
+            particles.forEach((p, i) => {
+                let targetPos;
+                if (p.isDecorator) {
+                    p.curr.add(new THREE.Vector3(
+                        Math.sin(time * 0.2 + i) * 0.01,
+                        Math.cos(time * 0.2 + i) * 0.01,
+                        0
+                    ));
+                    targetPos = p.curr;
+                } else {
+                    if (currentMode === 'text') {
+                        targetPos = textPoints[i].clone().add(handPos);
+                        p.color.setHSL(0.55 + Math.sin(time * 0.1) * 0.1, 0.9, 0.6);
+                    }
+                    else if (currentMode === 'image' && allImagePoints.length > 0) {
+                        targetPos = allImagePoints[currentImageIndex][i].clone().add(handPos);
+                        p.color.setHSL(0.0, 0.0, 0.9);
+                    }
+                    else if (currentMode === 'blackhole') {
+                        if (i < particleCount * 0.6) {
+                            const bhIndex = i % bhPoints.length;
+                            const basePoint = bhPoints[bhIndex].clone();
+                            basePoint.y -= 4;
+                            targetPos = basePoint.add(handPos);
+
+                            const dist = bhPoints[bhIndex].length();
+                            if (dist < 1) {
+                                p.color.setHSL(0.65, 0.3, 0.05);
+                            } else if (dist < 3.5) {
+                                const intensity = 1 - (dist - 1) / 2.5;
+                                p.color.setHSL(
+                                    0.11 + Math.sin(time * 3 + i * 0.05) * 0.02,
+                                    1,
+                                    0.5 + intensity * 0.4
+                                );
+                            } else if (dist < 6) {
+                                const pulse = Math.sin(time * 2 + i * 0.03) * 0.12;
+                                p.color.setHSL(0.08, 0.98, 0.55 + pulse);
+                            } else if (dist < 9.5) {
+                                p.color.setHSL(0.04, 0.92, 0.38 + Math.random() * 0.12);
+                            } else {
+                                p.color.setHSL(0.01, 0.75, 0.28 + Math.sin(time * 0.8 + i) * 0.07);
+                            }
+                        } else {
+                            const msgIndex = i - Math.floor(particleCount * 0.6);
+                            targetPos = thankYouPoints[msgIndex % thankYouPoints.length].clone();
+                            targetPos.y += 7;
+                            targetPos.add(handPos);
+
+                            const goldPulse = Math.sin(time * 3 + i * 0.08) * 0.15;
+                            p.color.setHSL(0.13, 1, 0.72 + goldPulse);
+                        }
+                    }
+                    else {
+                        targetPos = ambientPoints[i];
+                        p.color.setHSL(0.6, 0.3, 0.4);
+                    }
+                    p.curr.lerp(targetPos, 0.08);
+                }
+                posAttr[i * 3] = p.curr.x;
+                posAttr[i * 3 + 1] = p.curr.y;
+                posAttr[i * 3 + 2] = p.curr.z;
+                colAttr[i * 3] = p.color.r;
+                colAttr[i * 3 + 1] = p.color.g;
+                colAttr[i * 3 + 2] = p.color.b;
+            });
+
+            fireworks.forEach((fw, idx) => {
+                fw.pos.add(fw.vel);
+                fw.life -= 0.015;
+                if (fw.life > 0) {
+                    const pIdx = (particleCount - 1 - (idx % 2000)) * 3;
+                    posAttr[pIdx] = fw.pos.x;
+                    posAttr[pIdx + 1] = fw.pos.y;
+                    posAttr[pIdx + 2] = fw.pos.z;
+                    colAttr[pIdx] = fw.color.r;
+                    colAttr[pIdx + 1] = fw.color.g;
+                    colAttr[pIdx + 2] = fw.color.b;
+                }
+            });
+            if (fireworks.length > 4000) fireworks.splice(0, 1000);
+
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+            particleSystem.geometry.attributes.color.needsUpdate = true;
+
+            if (currentMode === 'blackhole') {
+                particleSystem.rotation.y += 0.005;
+            } else {
+                particleSystem.rotation.y += 0.0008;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        async function initAI() {
+            videoElement = document.getElementById('video-input');
+            try {
+                handsDetector = new Hands({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+                });
+                handsDetector.setOptions({
+                    maxNumHands: 2,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.6,
+                    minTrackingConfidence: 0.5
+                });
+                handsDetector.onResults(onHandResults);
+                const cam = new Camera(videoElement, {
+                    onFrame: async () => await handsDetector.send({ image: videoElement }),
+                    width: 480,
+                    height: 360
+                });
+                await cam.start();
+            } catch (e) {
+                console.log("IA no disponible, usa controles manuales");
+            }
+            document.getElementById('loading-screen').style.display = 'none';
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>
